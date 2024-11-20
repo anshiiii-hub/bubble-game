@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Again ? <br> Computer Vision Balloon Popping Game</title>
+    <style>
+        /* Reset default styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #ff6a00, #ffcc00); /* Bright gradient background */
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            text-align: center;
+            position: relative;
+            animation: gradientAnimation 5s infinite alternate;
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background: linear-gradient(to right, #ff6a00, #ffcc00);
+            }
+            100% {
+                background: linear-gradient(to right, #00bfff, #1e90ff);
+            }
+        }
+
+        /* Main Container */
+        .container {
+            background-color: rgba(0, 0, 0, 0.2); /* Dark background with transparency */
+            border-radius: 25px;
+            padding: 60px;
+            width: 85%;
+            max-width: 750px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            z-index: 2;
+        }
+
+        /* Game Title */
+        .game-title h1 {
+            font-size: 4.5em;
+            color: #fff;
+            margin-bottom: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Game Description */
+        .game-description p {
+            font-size: 1.4em;
+            margin-bottom: 30px;
+            color: #f0f0f0;
+            line-height: 1.6;
+            font-style: italic;
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Play Again Button */
+        .play-again-btn {
+            background-color: #ff6347; /* Tomato Red */
+            color: white;
+            font-size: 1.8em;
+            padding: 18px 45px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .play-again-btn:hover {
+            background-color: #00bfff; /* Deep Sky Blue */
+            transform: scale(1.1);
+        }
+
+        .play-again-btn:focus {
+            outline: none;
+        }
+
+        /* Balloon Animation */
+        .balloon {
+            position: absolute;
+            bottom: -100px;
+            border-radius: 50%;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .balloon:before {
+            content: "";
+            position: absolute;
+            width: 2px;
+            height: 30px;
+            background-color: #f1c40f; /* Golden string */
+            left: 50%;
+            transform: translateX(-50%);
+            top: -10px;
+        }
+
+        /* Balloon Colors */
+        .balloon-1 {
+            width: 120px;
+            height: 160px;
+            background-color: #e74c3c; /* Bright Red */
+            animation-duration: 9s;
+        }
+
+        .balloon-2 {
+            width: 110px;
+            height: 150px;
+            background-color: #1abc9c; /* Teal */
+            animation-duration: 7s;
+        }
+
+        .balloon-3 {
+            width: 130px;
+            height: 160px;
+            background-color: #3498db; /* Vivid Blue */
+            animation-duration: 6s;
+        }
+
+        .balloon-4 {
+            width: 100px;
+            height: 140px;
+            background-color: #9b59b6; /* Rich Purple */
+            animation-duration: 10s;
+        }
+
+        .balloon-5 {
+            width: 115px;
+            height: 145px;
+            background-color: #f39c12; /* Bright Yellow */
+            animation-duration: 7s;
+        }
+
+        /* Floating Animation */
+        @keyframes float {
+            0% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-250px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        /* Randomize Balloon Positions */
+        .balloon-1 { left: 10%; }
+        .balloon-2 { left: 25%; }
+        .balloon-3 { left: 45%; }
+        .balloon-4 { left: 75%; }
+        .balloon-5 { left: 80%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-title">
+            <h1 style="font-family: cursive; color: #ff6347;">Play Again - Balloon Popping Game</h1>
+        </div>
+        <div class="game-description">
+            <p style="color: #f0f0f0; font-family: Georgia, 'Times New Roman', Times, serif;">Congratulations on completing the game! Ready for another round? Click the button below to play again!</p>
+        </div>
+        <div class="play-again-button-container">
+            <button class="play-again-btn" onclick="playAgain()">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Decorative Balloons -->
+    <div class="balloon balloon-1"></div>
+    <div class="balloon balloon-2"></div>
+    <div class="balloon balloon-3"></div>
+    <div class="balloon balloon-4"></div>
+    <div class="balloon balloon-5"></div>
+
+    <script>
+        // Function to simulate playing again
+        function playAgain() {
+            alert("Starting a new game!");
+            // Logic for restarting the game, e.g., reset the score, start new game
+            // This could also link back to the game page if necessary.
+            window.location.href = "game.html"; // Example link back to game page
+        }
+    </script>
+</body>
+</html>
