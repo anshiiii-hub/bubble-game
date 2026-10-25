@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Bubble Pop 2.0 - Next-Gen AI Computer Vision Hand Tracking Arcade Game. Dual-hand tracking, gesture superpowers, boss battles, and cyber aesthetics!">
+    <title>Bubble Pop! 2.0 — AI Dual-Hand Tracking Arcade</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- CSS Design System -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Google MediaPipe Hands CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <!-- Ambient Background Bubbles Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Video Element for MediaPipe Camera (Mirrored & Subtle) -->
+    <video id="webcam-video" playsinline autoplay muted></video>
+
+    <!-- Achievement Toast Notification -->
+    <div id="achievement-toast">
+        <span class="toast-icon">🏆</span>
+        <div class="toast-content">
+            <span class="toast-label">Achievement Unlocked!</span>
+            <span class="toast-title">Blade Slicer</span>
+            <span class="toast-desc">Sliced 3 balloons with high speed</span>
+        </div>
+    </div>
+
+    <div class="screen-wrapper">
+        <!-- 1. Welcome / Start Screen -->
+        <section id="start-screen" class="screen active">
+            <div class="welcome-card glass-panel">
+                <div class="game-logo">
+                    <span class="logo-badge">⚡ Next-Gen AI Dual-Hand Vision</span>
+                    <h1 class="game-title">Bubble Pop! 2.0 🫧</h1>
+                    <p class="game-tagline">Pop balloons with both hands using your webcam, unleash gesture superpowers, and slice with fruit-ninja blade trails!</p>
+                </div>
+
+                <!-- Theme Selector -->
+                <div class="selector-group">
+                    <span class="selector-label">Visual Theme</span>
+                    <div class="segmented-control">
+                        <button class="segment-btn active" data-theme="cyberpunk">🌃 Cyber</button>
+                        <button class="segment-btn" data-theme="ocean">🌊 Ocean</button>
+                        <button class="segment-btn" data-theme="synthwave">🌆 Synth</button>
+                        <button class="segment-btn" data-theme="cosmic">🌌 Cosmic</button>
+                    </div>
+                </div>
+
+                <!-- Game Mode Selector -->
+                <div class="selector-group">
+                    <span class="selector-label">Game Mode</span>
+                    <div class="segmented-control">
+                        <button class="segment-btn active" data-mode="arcade">
+                            <span class="btn-icon">⏱️</span> Time Attack
+                        </button>
+                        <button class="segment-btn" data-mode="survival">
+                            <span class="btn-icon">❤️</span> Survival
+                        </button>
+                        <button class="segment-btn" data-mode="zen">
+                            <span class="btn-icon">🧘</span> Zen Mode
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Controller Selector -->
+                <div class="selector-group">
+                    <span class="selector-label">Control Method</span>
+                    <div class="segmented-control">
+                        <button class="segment-btn active" data-input="hand">
+                            <span class="btn-icon">✋</span> Dual-Hand Tracking
+                        </button>
+                        <button class="segment-btn" data-input="mouse">
+                            <span class="btn-icon">🖱️</span> Mouse & Touch
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gesture Superpowers Guide -->
+                <div class="gestures-guide">
+                    <div class="gesture-item">
+                        <span class="gesture-icon">✊</span>
+                        <div><strong>Fist Clench</strong><br>Sonic Boom Wave</div>
+                    </div>
+                    <div class="gesture-item">
+                        <span class="gesture-icon">🤏</span>
+                        <div><strong>Pinch Tip</strong><br>Laser Burst</div>
+                    </div>
+                    <div class="gesture-item">
+                        <span class="gesture-icon">🗡️</span>
+                        <div><strong>Fast Swipe</strong><br>Blade Ribbon Slice</div>
+                    </div>
+                </div>
+
+                <!-- Powerups Preview -->
+                <div class="features-preview">
+                    <div class="tip-pill"><span class="pill-dot star"></span> ⭐ Star (+50)</div>
+                    <div class="tip-pill"><span class="pill-dot" style="background:#00e5ff; box-shadow:0 0 8px #00e5ff;"></span> ⚡ Lightning Chain</div>
+                    <div class="tip-pill"><span class="pill-dot freeze"></span> ❄️ Freeze Time</div>
+                    <div class="tip-pill"><span class="pill-dot" style="background:#ff0055; box-shadow:0 0 8px #ff0055;"></span> 👑 Mega Boss</div>
+                    <div class="tip-pill"><span class="pill-dot bomb"></span> 💣 Bomb (-30)</div>
+                </div>
+
+                <!-- Actions -->
+                <div class="cta-btn-container">
+                    <button id="btn-start-game" class="btn-primary-glow">
+                        <span>START POPPING</span> 🎈
+                    </button>
+                    <button id="btn-achievements" class="btn-secondary" style="flex:0 0 70px; font-size:1.4rem;" title="Achievements">
+                        🏆
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Active Game Screen -->
+        <section id="game-screen" class="screen">
+            <canvas id="game-canvas"></canvas>
+
+            <div id="freeze-overlay"></div>
+            <div id="frenzy-banner">⚡ BUBBLE RUSH! 2X POINTS! ⚡</div>
+
+            <div class="hud-overlay">
+                <!-- Top Status Bar -->
+                <header class="hud-top-bar">
+                    <div class="hud-group-left">
+                        <div class="hud-card">
+                            <span class="hud-icon">🏆</span>
+                            <div class="hud-data">
+                                <span class="hud-label">Score</span>
+                                <span id="hud-score" class="hud-value">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Combo Gauge -->
+                        <div class="combo-display">
+                            <div class="combo-badge">2x COMBO</div>
+                            <div class="combo-bar-wrapper">
+                                <div class="combo-bar-fill"></div>
+                            </div>
+                        </div>
+
+                        <!-- Shockwave Power Meter -->
+                        <div class="hud-superpower-card" title="Clench fist to charge, open to detonate!">
+                            <span style="font-size: 1.2rem;">✊</span>
+                            <div class="hud-data">
+                                <span class="hud-label" style="font-size: 0.65rem;">Sonic Boom</span>
+                                <div class="shockwave-bar-wrapper">
+                                    <div id="hud-shockwave-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hud-group-right">
+                        <div id="hud-time-card" class="hud-card">
+                            <span class="hud-icon">⏳</span>
+                            <div class="hud-data">
+                                <span class="hud-label">Time</span>
+                                <span id="hud-time" class="hud-value">60s</span>
+                            </div>
+                        </div>
+
+                        <div id="hud-lives-card" class="hud-card" style="display: none;">
+                            <span class="hud-icon">❤️</span>
+                            <div class="hud-data">
+                                <span class="hud-label">Lives</span>
+                                <div class="lives-container">
+                                    <span class="heart-icon">❤️</span>
+                                    <span class="heart-icon">❤️</span>
+                                    <span class="heart-icon">❤️</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hud-card">
+                            <span class="hud-icon">⭐</span>
+                            <div class="hud-data">
+                                <span class="hud-label">Best</span>
+                                <span id="hud-best" class="hud-value">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Controls -->
+                        <button id="btn-toggle-sound" class="hud-btn" title="Toggle Sound">🔊</button>
+                        <button id="btn-toggle-music" class="hud-btn" title="Toggle Ambient Music">🎵</button>
+                        <button id="btn-toggle-skeleton" class="hud-btn active" title="Toggle Neon Hand Skeleton">🦴</button>
+                        <button id="btn-toggle-cam" class="hud-btn" title="Toggle Webcam View">📹</button>
+                        <button id="btn-pause" class="hud-btn" title="Pause Game">⏸️</button>
+                    </div>
+                </header>
+
+                <!-- Bottom Status Bar -->
+                <footer class="hud-bottom-bar">
+                    <div class="tracker-status-pill">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Initializing Tracking...</span>
+                    </div>
+                </footer>
+            </div>
+        </section>
+
+        <!-- 3. Pause Modal -->
+        <div id="pause-modal" class="modal-backdrop">
+            <div class="modal-content glass-panel">
+                <h2 class="modal-title">Game Paused</h2>
+                <p style="color: var(--text-muted);">Take a breath, stretch your fingers, and jump back in!</p>
+                <div class="modal-actions" style="flex-direction: column; width: 100%;">
+                    <button id="btn-resume" class="btn-primary-glow" style="font-size: 1.2rem; padding: 14px;">Resume Game ▶️</button>
+                    <button class="btn-secondary btn-restart">Restart Match 🔄</button>
+                    <button class="btn-secondary btn-menu">Quit to Menu 🏠</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Achievements Modal -->
+        <div id="achievements-modal" class="modal-backdrop">
+            <div class="modal-content glass-panel" style="max-width: 580px;">
+                <h2 class="modal-title">🏆 Achievements</h2>
+                <div id="achievements-grid"></div>
+                <button id="btn-close-achievements" class="btn-secondary" style="width: 100%; margin-top: 10px;">Close</button>
+            </div>
+        </div>
+
+        <!-- 5. Game Over Modal -->
+        <div id="game-over-modal" class="modal-backdrop">
+            <div class="modal-content glass-panel">
+                <div class="game-over-badge">👑</div>
+                <h2 class="modal-title">Game Complete!</h2>
+                <div class="new-record-pill" style="display:none;">🎉 NEW HIGH SCORE!</div>
+
+                <div class="score-display-big">
+                    <span class="big-label">Final Score</span>
+                    <span class="big-score">0</span>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span id="stat-popped" class="stat-num">0</span>
+                        <span class="stat-title">Popped</span>
+                    </div>
+                    <div class="stat-item">
+                        <span id="stat-max-combo" class="stat-num">1x</span>
+                        <span class="stat-title">Max Combo</span>
+                    </div>
+                    <div class="stat-item">
+                        <span id="stat-grade" class="stat-num" style="color: var(--accent-gold);">S</span>
+                        <span class="stat-title">Grade</span>
+                    </div>
+                </div>
+
+                <!-- Selfie Trophy Photo Action -->
+                <button id="btn-trophy-snapshot" class="btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>📸 Download Trophy Photo Card</span>
+                </button>
+
+                <div class="modal-actions">
+                    <button class="btn-primary-glow btn-restart" style="flex: 2; font-size: 1.2rem; padding: 14px;">
+                        <span>Play Again</span> 🎈
+                    </button>
+                    <button class="btn-secondary btn-menu" style="flex: 1;">
+                        Menu 🏠
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Scripts -->
+    <script src="audio.js"></script>
+    <script src="cv.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
