@@ -61,7 +61,7 @@ Then visit: **`http://localhost:8080`**
 ### Method 3: Desktop Python (OpenCV + Pygame)
 
 ```bash
-pip install opencv-python pygame cvzone numpy
+pip install -r requirements.txt
 python3 BalloonPop.py
 ```
 

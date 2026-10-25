@@ -1,0 +1,13 @@
+# ==============================================================================
+# Bubble Pop! 2.0 - Dependencies
+# ==============================================================================
+
+# Core Web Application Server
+Flask>=3.0.0
+
+# Optional Desktop OpenCV / Pygame Mode (BalloonPop.py)
+# Note: For web browser play, no additional libraries are required.
+opencv-python>=4.8.0
+pygame>=2.5.0
+cvzone>=1.6.1
+numpy>=1.24.0
