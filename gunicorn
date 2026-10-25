@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Universal launcher for Render when Start Command is 'gunicorn app:app'
+
+# 1. Try real gunicorn if installed in PATH or ~/.local/bin
+if command -v gunicorn &> /dev/null; then
+    exec gunicorn "$@"
+elif [ -f "$HOME/.local/bin/gunicorn" ]; then
+    exec "$HOME/.local/bin/gunicorn" "$@"
+fi
+
+# 2. Try python3 -m gunicorn or python3 app.py
+if command -v python3 &> /dev/null; then
+    # Try running python3 app.py directly
+    exec python3 app.py
+elif command -v python &> /dev/null; then
+    exec python app.py
+fi
+
+# 3. Fallback to Node.js server
+exec node server.js
