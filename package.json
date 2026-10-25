@@ -1,0 +1,10 @@
+{
+  "name": "bubble-game",
+  "version": "2.0.0",
+  "description": "Bubble Pop! 2.0 - AI Dual-Hand Tracking Arcade Game",
+  "main": "app.py",
+  "scripts": {
+    "build": "pip install -r requirements.txt",
+    "start": "gunicorn app:app || python app.py"
+  }
+}
