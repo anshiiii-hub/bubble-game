@@ -40,28 +40,22 @@ Playable immediately via webcam (using both hands as virtual laser reticles) or 
 
 ---
 
-## 🚀 How to Run
+### Method 1: Web Browser Mode (Recommended)
 
-### Method 1: Flask Web Server (Running on Port 5050)
-
+Start the local server using either Node.js or Python:
 ```bash
-python3 app.py
+npm start
+# or: node server.js
+# or: python3 app.py
 ```
 Then visit: **`http://localhost:5050`**
 
-*(Port 5050 is selected to prevent conflicts with Apple AirPlay Receiver on port 5000).*
+*(Note: Always open via `http://localhost:5050`, do not use `file://` because modern browsers block camera access under `file://` origins).*
 
-### Method 2: Instant Static Server
-
-```bash
-python3 -m http.server 8080
-```
-Then visit: **`http://localhost:8080`**
-
-### Method 3: Desktop Python (OpenCV + Pygame)
+### Method 2: Standalone Desktop Mode (OpenCV + Pygame)
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-desktop.txt
 python3 BalloonPop.py
 ```
 
@@ -80,3 +74,9 @@ python3 BalloonPop.py
 | **🦴 Button** | Toggle Neon Cyber Skeleton |
 | **📹 Button** | Toggle Camera Feed Opacity |
 | **⏸️ Button** | Pause / Resume Game |
+
+## Deploy on Render
+
+Use the Node runtime with build command `npm install --ignore-scripts` and start command `node server.js`. The server listens on Render's `PORT` automatically. `render.yaml` includes these settings for Blueprint deployments.
+
+Scores are stored in a local JSON file and reset when Render replaces the instance or redeploys it.

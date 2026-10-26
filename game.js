@@ -622,14 +622,19 @@ class BubbleGame {
     }
 
     showAchievementToast(ach) {
+        this.showToast(ach.icon, ach.name, ach.desc, 3500);
+    }
+
+    showToast(icon, title, desc, duration = 4000) {
         const toast = document.getElementById('achievement-toast');
         if (!toast) return;
-        toast.querySelector('.toast-icon').innerText = ach.icon;
-        toast.querySelector('.toast-title').innerText = ach.name;
-        toast.querySelector('.toast-desc').innerText = ach.desc;
+        toast.querySelector('.toast-icon').innerText = icon;
+        toast.querySelector('.toast-title').innerText = title;
+        toast.querySelector('.toast-desc').innerText = desc;
 
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3500);
+        clearTimeout(this._toastTimeout);
+        this._toastTimeout = setTimeout(() => toast.classList.remove('show'), duration);
     }
 
     initBackgroundBubbles() {
@@ -759,7 +764,7 @@ class BubbleGame {
         window.visionController.init(
             videoEl,
             this.canvas,
-            (state) => {
+            (state, extraInfo) => {
                 const statusDot = document.querySelector('.status-dot');
                 const statusText = document.querySelector('.status-text');
                 if (!statusDot || !statusText) return;
@@ -773,6 +778,25 @@ class BubbleGame {
                 } else if (state === 'searching') {
                     statusDot.className = 'status-dot searching';
                     statusText.innerText = 'Searching for Hand... Show palm to camera';
+                } else if (state === 'loading') {
+                    statusDot.className = 'status-dot searching';
+                    statusText.innerText = 'Loading AI Vision Model...';
+                } else if (state === 'permission_denied') {
+                    statusDot.className = 'status-dot error';
+                    statusText.innerText = 'Camera Blocked! Click 🔒 in address bar to allow';
+                    this.showToast('📹', 'Camera Access Blocked', 'Allow camera permission in your browser URL bar, then start again.');
+                } else if (state === 'file_protocol') {
+                    statusDot.className = 'status-dot error';
+                    statusText.innerText = 'Server required (npm start) — file:// blocks camera';
+                    this.showToast('⚠️', 'Server Required', 'Browser security blocks camera on file://. Run: node server.js or python3 app.py');
+                } else if (state === 'unsupported') {
+                    statusDot.className = 'status-dot error';
+                    statusText.innerText = 'Camera requires HTTPS or http://localhost';
+                    this.showToast('🔒', 'Insecure Context', 'WebCam access requires http://localhost or https:// URL.');
+                } else if (state === 'error') {
+                    statusDot.className = 'status-dot error';
+                    statusText.innerText = extraInfo || 'Camera Error (Using Mouse/Touch)';
+                    this.showToast('⚠️', 'Camera Notice', extraInfo || 'Switched to mouse/touch mode.');
                 } else if (state === 'mouse') {
                     statusDot.className = 'status-dot active';
                     statusText.innerText = 'Mouse & Touch Mode Active';

@@ -1,9 +1,8 @@
 services:
   - type: web
-    name: bubble-game
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
+    name: balloon-pop-game
+    runtime: node
+    plan: free
+    buildCommand: npm install --ignore-scripts
+    startCommand: node server.js
+    healthCheckPath: /

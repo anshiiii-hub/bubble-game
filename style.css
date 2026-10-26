@@ -592,6 +592,11 @@ html, body {
     animation: blink 1s infinite alternate;
 }
 
+.status-dot.error {
+    background: var(--accent-pink);
+    box-shadow: 0 0 12px var(--accent-pink);
+}
+
 @keyframes blink {
     0% { opacity: 0.3; }
     100% { opacity: 1; }

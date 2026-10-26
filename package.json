@@ -4,8 +4,9 @@
   "description": "Bubble Pop! 2.0 - AI Dual-Hand Tracking Arcade Game",
   "main": "server.js",
   "scripts": {
-    "postinstall": "python3 -m pip install --break-system-packages -r requirements.txt || pip3 install --break-system-packages -r requirements.txt || true",
-    "build": "python3 -m pip install --break-system-packages -r requirements.txt || pip3 install --break-system-packages -r requirements.txt || true",
     "start": "node server.js"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

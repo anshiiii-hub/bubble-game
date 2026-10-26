@@ -45,6 +45,9 @@ class VisionController {
         this.onHandStateChange = null;
         this.onGestureDetected = null; // (gestureType, handIndex, position)
         this.cameraStarted = false;
+        this.stream = null;
+        this.animFrameId = null;
+        this.isProcessingFrame = false;
         this.lastHandTimestamp = 0;
     }
 
@@ -146,62 +149,172 @@ class VisionController {
         if (this.cameraStarted) return true;
         this.useCamera = true;
 
+        // 1. Detect file:// protocol (Browser security prohibits webcam and workers)
+        if (window.location.protocol === 'file:') {
+            console.warn("Camera and Web Workers cannot run under file:// due to browser security restrictions.");
+            if (this.onHandStateChange) this.onHandStateChange('file_protocol');
+            return false;
+        }
+
+        // 2. Detect missing getUserMedia (insecure HTTP or unsupported browser)
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error("navigator.mediaDevices.getUserMedia is not supported or page is not in a Secure Context.");
+            if (this.onHandStateChange) this.onHandStateChange('unsupported');
+            return false;
+        }
+
+        if (this.onHandStateChange) {
+            this.onHandStateChange('loading');
+        }
+
+        // 3. Wait for MediaPipe Hands CDN to load if still in transit
+        let attempts = 0;
+        while (typeof Hands === 'undefined' && attempts < 25) {
+            await new Promise(res => setTimeout(res, 200));
+            attempts++;
+        }
+
         if (typeof Hands === 'undefined') {
-            console.warn('MediaPipe Hands library not loaded yet.');
+            console.error('MediaPipe Hands library failed to load from CDN.');
+            if (this.onHandStateChange) {
+                this.onHandStateChange('error', 'AI vision model CDN timed out. Check network connection.');
+            }
             return false;
         }
 
         try {
-            this.handsInstance = new Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-            });
-
-            this.handsInstance.setOptions({
-                maxNumHands: 2, // Enable Dual Hand Tracking!
-                modelComplexity: 0, // 0 for max FPS responsiveness
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-
-            this.handsInstance.onResults((results) => this.onHandResults(results));
-
-            if (typeof Camera !== 'undefined' && this.videoElement) {
-                this.cameraInstance = new Camera(this.videoElement, {
-                    onFrame: async () => {
-                        if (this.useCamera && this.handsInstance) {
-                            await this.handsInstance.send({ image: this.videoElement });
-                        }
-                    },
-                    width: 640,
-                    height: 480
+            // Initialize Hands with pinned version
+            if (!this.handsInstance) {
+                this.handsInstance = new Hands({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
                 });
 
-                await this.cameraInstance.start();
-                this.cameraStarted = true;
-                if (this.onHandStateChange) {
-                    this.onHandStateChange('searching');
-                }
-                return true;
+                this.handsInstance.setOptions({
+                    maxNumHands: 2, // Enable Dual Hand Tracking!
+                    modelComplexity: 0, // 0 for max FPS responsiveness
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                this.handsInstance.onResults((results) => this.onHandResults(results));
             }
+
+            // Request webcam stream with flexible constraints
+            const constraints = {
+                video: {
+                    facingMode: 'user',
+                    width: { ideal: 640, max: 1280 },
+                    height: { ideal: 480, max: 720 }
+                },
+                audio: false
+            };
+
+            this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            if (this.videoElement) {
+                this.videoElement.srcObject = this.stream;
+                this.videoElement.setAttribute('playsinline', 'true');
+                this.videoElement.muted = true;
+
+                // Wait until video has loaded dimensions before sending frames
+                await new Promise((resolve) => {
+                    if (this.videoElement.readyState >= 1) {
+                        resolve();
+                    } else {
+                        this.videoElement.onloadedmetadata = () => resolve();
+                    }
+                });
+
+                await this.videoElement.play();
+            }
+
+            this.cameraStarted = true;
+            if (this.onHandStateChange) {
+                this.onHandStateChange('searching');
+            }
+
+            // High-performance, crash-safe frame processing loop
+            const processFrame = async () => {
+                if (!this.useCamera || !this.cameraStarted) return;
+
+                // Only send to MediaPipe if video is playing and valid to avoid WASM abort crash
+                if (this.videoElement &&
+                    this.videoElement.readyState >= 2 &&
+                    this.videoElement.videoWidth > 0 &&
+                    !this.isProcessingFrame &&
+                    this.handsInstance) {
+                    this.isProcessingFrame = true;
+                    try {
+                        await this.handsInstance.send({ image: this.videoElement });
+                    } catch (err) {
+                        console.warn("MediaPipe frame skipped:", err);
+                    } finally {
+                        this.isProcessingFrame = false;
+                    }
+                }
+
+                if (this.cameraStarted && this.useCamera) {
+                    if ('requestVideoFrameCallback' in HTMLVideoElement.prototype && this.videoElement) {
+                        this.videoElement.requestVideoFrameCallback(processFrame);
+                    } else {
+                        this.animFrameId = requestAnimationFrame(processFrame);
+                    }
+                }
+            };
+
+            if ('requestVideoFrameCallback' in HTMLVideoElement.prototype && this.videoElement) {
+                this.videoElement.requestVideoFrameCallback(processFrame);
+            } else {
+                this.animFrameId = requestAnimationFrame(processFrame);
+            }
+
+            return true;
         } catch (err) {
             console.error('Camera or MediaPipe initialization failed:', err);
             this.cameraStarted = false;
             this.useCamera = false;
-            if (this.onHandStateChange) {
-                this.onHandStateChange('error');
+            this.isProcessingFrame = false;
+
+            if (this.stream) {
+                try { this.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                this.stream = null;
+            }
+
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                if (this.onHandStateChange) this.onHandStateChange('permission_denied');
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                if (this.onHandStateChange) this.onHandStateChange('error', 'No webcam detected on your device.');
+            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                if (this.onHandStateChange) this.onHandStateChange('error', 'Webcam is in use by another app (e.g. Zoom/FaceTime).');
+            } else {
+                if (this.onHandStateChange) this.onHandStateChange('error', err.message || 'Camera failed to start.');
             }
             return false;
         }
-        return false;
     }
 
     stopCamera() {
-        if (this.cameraInstance) {
-            try { this.cameraInstance.stop(); } catch (e) {}
-            this.cameraStarted = false;
-        }
-        this.isTracking = false;
+        this.cameraStarted = false;
         this.useCamera = false;
+        this.isTracking = false;
+        this.isProcessingFrame = false;
+
+        if (this.animFrameId) {
+            cancelAnimationFrame(this.animFrameId);
+            this.animFrameId = null;
+        }
+
+        if (this.stream) {
+            try {
+                this.stream.getTracks().forEach(track => track.stop());
+            } catch (e) {}
+            this.stream = null;
+        }
+
+        if (this.videoElement) {
+            this.videoElement.srcObject = null;
+        }
+
         this.pointers.forEach(p => p.active = false);
         if (this.onHandStateChange) {
             this.onHandStateChange('disabled');
